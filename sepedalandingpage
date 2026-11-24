@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pemilik - SewaSepedaSMR.my.id</title>
+    <meta name="theme-color" content="#063177">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Firebase Compat SDK (Opsional: aktif otomatis jika CONFIG.firebase diisi) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'Inter', 'sans-serif']
+                    },
+                    colors: {
+                        navy: '#063177',
+                        midnight: '#060B11',
+                        electric: '#0055FF',
+                        'electric-dark': '#0044CC',
+                        cloud: '#F1F2F2',
+                        slatecool: '#526071'
+                    }
+                }
+            }
+        };
+    </script>
+
+    <style>
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.22s ease-out forwards; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        :focus-visible { outline: 2px solid #0055FF; outline-offset: 2px; }
+    </style>
+</head>
+<body class="bg-cloud text-midnight antialiased selection:bg-electric selection:text-white">
+
+    <!-- ================= LOCK SCREEN / PIN PEMILIK ================= -->
+    <div id="lock-screen" class="fixed inset-0 z-50 bg-gradient-to-br from-navy to-midnight flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-xs rounded-3xl p-6 text-center shadow-2xl animate-fade">
+            <div class="w-14 h-14 rounded-2xl bg-electric text-white flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </div>
+            <h1 class="font-display font-extrabold text-lg text-midnight">Dashboard Pemilik</h1>
+            <p class="text-xs text-slatecool mt-1">Masukkan PIN akses SewaSepedaSMR.my.id</p>
+            <form onsubmit="unlockDashboard(event)" class="mt-4 space-y-3">
+                <input type="password" id="pin-input" inputmode="numeric" maxlength="6" required placeholder="••••" class="w-full text-center font-display font-extrabold text-xl tracking-[0.4em] py-3 rounded-xl bg-cloud border border-navy/15 focus:outline-none focus:ring-2 focus:ring-electric">
+                <p id="pin-error" class="hidden text-xs text-red-600 font-medium">PIN salah. (Default: 1234)</p>
+                <button type="submit" class="w-full py-3 rounded-xl bg-electric hover:bg-electric-dark text-white font-bold text-sm transition active:scale-95">
+                    Buka Dashboard
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="min-h-screen flex flex-col lg:flex-row">
+
+        <!-- ================= SIDEBAR DESKTOP ================= -->
+        <aside class="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-navy text-white p-5 justify-between shadow-xl z-30 border-r border-midnight/20">
+            <div>
+                <div class="flex items-center gap-3 pb-6 border-b border-white/10">
+                    <div class="w-10 h-10 rounded-xl bg-electric text-white flex items-center justify-center shrink-0 shadow-md">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+                            <circle cx="5.5" cy="17.5" r="3.5"></circle>
+                            <circle cx="18.5" cy="17.5" r="3.5"></circle>
+                            <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"></path>
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="font-display font-extrabold text-sm tracking-tight truncate">sewasepedasmr<span class="text-[#60A5FA]">.my.id</span></p>
+                        <p class="text-[11px] text-white/65">Panel Pemilik Usaha</p>
+                    </div>
+                </div>
+
+                <nav class="mt-6 space-y-1.5">
+                    <button onclick="switchSection('overview')" id="side-overview" class="side-btn w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold bg-electric text-white shadow-sm transition">
+                        <span class="flex items-center gap-3">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1"></rect></svg>
+                            Reservasi &amp; Ringkasan
+                        </span>
+                        <span id="sidebar-pending-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-electric">0</span>
+                    </button>
+                    <button onclick="switchSection('fleet')" id="side-fleet" class="side-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-white/75 hover:bg-white/10 hover:text-white transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="18.5" cy="17.5" r="3.5"></circle><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"></path></svg>
+                        Armada Sepeda
+                    </button>
+                    <button onclick="switchSection('settings')" id="side-settings" class="side-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-white/75 hover:bg-white/10 hover:text-white transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        Promo, QRIS &amp; Toko
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Status Sinkronisasi & Basecamp -->
+            <div class="pt-4 border-t border-white/10 space-y-2.5">
+                <div class="bg-midnight/40 rounded-2xl p-3 border border-white/10">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span id="sync-dot" class="w-2 h-2 rounded-full bg-electric ring-2 ring-[#60A5FA]/40 animate-pulse"></span>
+                        <span id="sync-status-label" class="text-[11px] font-bold text-[#93C5FD]">Live Sync Aktif</span>
+                    </div>
+                    <p class="text-[11px] text-white/80 leading-snug">Jl. Antasari Nusa Indah (Gg. Samping Suryaphone)</p>
+                    <p class="text-[10px] text-white/55 mt-1">WA: +62 812-3387-7752</p>
+                </div>
+                <button onclick="lockDashboard()" class="w-full py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 text-xs font-semibold transition">
+                    🔒 Kunci Dashboard
+                </button>
+            </div>
+        </aside>
+
+        <!-- ================= HEADER MOBILE ================= -->
+        <header class="lg:hidden sticky top-0 z-30 bg-navy text-white px-4 py-3.5 flex items-center justify-between shadow-md">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-electric text-white flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+                        <circle cx="5.5" cy="17.5" r="3.5"></circle>
+                        <circle cx="18.5" cy="17.5" r="3.5"></circle>
+                        <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-display font-extrabold text-sm leading-tight">sewasepedasmr<span class="text-[#60A5FA]">.my.id</span></p>
+                    <p class="text-[10px] text-white/70" id="mob-sync-label">Dashboard Pemilik • Live</p>
+                </div>
+            </div>
+            <button onclick="openWalkinModal()" class="px-3 py-1.5 rounded-xl bg-electric hover:bg-electric-dark text-white text-xs font-bold active:scale-95 transition">
+                + Sewa Walk-in
+            </button>
+        </header>
+
+        <!-- ================= KONTEN UTAMA ================= -->
+        <div class="flex-1 lg:pl-64 flex flex-col min-h-screen pb-24 lg:pb-10">
+
+            <!-- Top Bar Desktop -->
+            <div class="hidden lg:flex items-center justify-between px-8 py-5 bg-white/85 backdrop-blur-md border-b border-navy/10 sticky top-0 z-20">
+                <div>
+                    <h2 id="page-title" class="font-display text-xl font-extrabold text-midnight">Ringkasan Operasional</h2>
+                    <p id="page-subtitle" class="text-xs text-slatecool">Terhubung otomatis dengan aplikasi reservasi pelanggan.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="text-right mr-2">
+                        <p class="text-xs font-bold text-midnight" id="current-date-label">Hari Ini</p>
+                        <p class="text-[11px] text-slatecool">Samarinda (WITA)</p>
+                    </div>
+                    <button onclick="openWalkinModal()" class="px-4 py-2.5 rounded-xl bg-electric hover:bg-electric-dark text-white text-xs font-bold flex items-center gap-2 shadow-sm transition active:scale-95">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        Catat Sewa Walk-in
+                    </button>
+                </div>
+            </div>
+
+            <main class="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6">
+
+                <!-- ==================== SECTION 1: RINGKASAN & RESERVASI (HALAMAN DEPAN) ==================== -->
+                <section id="sec-overview" class="space-y-5 animate-fade">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        <div class="bg-navy text-white rounded-2xl p-4 sm:p-5 shadow-md relative overflow-hidden">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-[11px] font-medium text-white/80">Total Pendapatan</span>
+                                <span class="w-8 h-8 rounded-xl bg-electric text-white flex items-center justify-center text-sm">💰</span>
+                            </div>
+                            <p id="kpi-revenue" class="font-display text-xl sm:text-2xl font-extrabold text-white">Rp0</p>
+                            <p class="text-[11px] text-[#93C5FD] mt-1">Pesanan aktif &amp; selesai</p>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-navy/10">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-[11px] font-medium text-slatecool">Perlu Konfirmasi</span>
+                                <span class="w-8 h-8 rounded-xl bg-electric/10 text-electric flex items-center justify-center text-sm">📋</span>
+                            </div>
+                            <p id="kpi-pending" class="font-display text-xl sm:text-2xl font-extrabold text-midnight">0</p>
+                            <p class="text-[11px] text-electric font-semibold mt-1">Pesanan / bukti QRIS baru</p>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-navy/10">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-[11px] font-medium text-slatecool">Sedang Gowes</span>
+                                <span class="w-8 h-8 rounded-xl bg-navy/10 text-navy flex items-center justify-center text-sm">🚲</span>
+                            </div>
+                            <p id="kpi-active" class="font-display text-xl sm:text-2xl font-extrabold text-midnight">0</p>
+                            <p class="text-[11px] text-slatecool mt-1">Unit sedang dipinjam</p>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-navy/10">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-[11px] font-medium text-slatecool">Armada Siap</span>
+                                <span class="w-8 h-8 rounded-xl bg-green-100 text-green-700 flex items-center justify-center text-sm">✅</span>
+                            </div>
+                            <p id="kpi-fleet" class="font-display text-xl sm:text-2xl font-extrabold text-midnight">0/0</p>
+                            <p id="kpi-fleet-sub" class="text-[11px] text-green-700 font-medium mt-1">Siap disewakan</p>
+                        </div>
+                    </div>
+
+                    <!-- Manajemen Reservasi Langsung di Halaman Depan -->
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-navy/10 space-y-3">
+                        <div class="flex flex-col sm:flex-row gap-3 justify-between">
+                            <div class="relative flex-1">
+                                <input type="text" id="booking-search" oninput="renderBookings()" placeholder="Cari kode booking, nama penyewa, atau no. WA..." class="w-full text-xs pl-9 pr-4 py-2.5 rounded-xl bg-cloud border border-navy/15 focus:outline-none focus:ring-2 focus:ring-electric">
+                                <svg class="w-4 h-4 text-slatecool absolute left-3 top-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </div>
+                            <button onclick="openWalkinModal()" class="px-4 py-2.5 rounded-xl bg-electric hover:bg-electric-dark text-white text-xs font-bold shrink-0 active:scale-95 transition">
+                                + Input Sewa Walk-in
+                            </button>
+                        </div>
+
+                        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="booking-status-filters">
+                            <button onclick="setBookingFilter('Semua')" class="filter-pill px-3 py-1.5 rounded-full text-xs font-bold bg-electric text-white shrink-0">Semua</button>
+                            <button onclick="setBookingFilter('Menunggu')" class="filter-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-cloud text-slatecool shrink-0">Menunggu Konfirmasi / Bayar</button>
+                            <button onclick="setBookingFilter('Dikonfirmasi')" class="filter-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-cloud text-slatecool shrink-0">Dikonfirmasi</button>
+                            <button onclick="setBookingFilter('Sedang Dipinjam')" class="filter-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-cloud text-slatecool shrink-0">Sedang Dipinjam</button>
+                            <button onclick="setBookingFilter('Selesai')" class="filter-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-cloud text-slatecool shrink-0">Selesai</button>
+                            <button onclick="setBookingFilter('Dibatalkan')" class="filter-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-cloud text-slatecool shrink-0">Dibatalkan / Expired</button>
+                        </div>
+                    </div>
+
+                    <div id="bookings-container" class="space-y-3"></div>
+                </section>
+
+                <!-- ==================== SECTION 2: ARMADA SEPEDA ==================== -->
+                <section id="sec-fleet" class="hidden space-y-4 animate-fade">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white rounded-2xl p-4 shadow-sm border border-navy/10">
+                        <div>
+                            <h3 class="font-display font-bold text-base text-midnight">Daftar Armada Sepeda</h3>
+                            <p class="text-xs text-slatecool">Perubahan di sini otomatis memperbarui katalog di aplikasi pelanggan.</p>
+                        </div>
+                        <button onclick="openBikeModal()" class="px-4 py-2.5 rounded-xl bg-electric hover:bg-electric-dark text-white text-xs font-bold shrink-0 active:scale-95 transition">
+                            + Tambah Unit Sepeda
+                        </button>
+                    </div>
+
+                    <div id="fleet-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+                </section>
+
+                <!-- ==================== SECTION 4: PROMO, QRIS & PENGATURAN ==================== -->
+                <section id="sec-settings" class="hidden space-y-5 animate-fade">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        <!-- Pengaturan Banner Promo, QRIS & Jam -->
+                        <div class="bg-white rounded-2xl p-5 shadow-sm border border-navy/10 space-y-4">
+                            <div>
+                                <h3 class="font-display font-bold text-base text-midnight">Banner Promo, QRIS &amp; Jam Buka</h3>
+                                <p class="text-xs text-slatecool">Langsung ter-update ke halaman reservasi pelanggan.</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-midnight mb-1">Isi Pengumuman / Banner Promo</label>
+                                <textarea id="set-promo-text" rows="2" class="w-full text-xs p-3 rounded-xl bg-cloud border border-navy/15 focus:outline-none focus:ring-2 focus:ring-electric"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-midnight mb-1">URL Gambar QRIS Toko (Opsional)</label>
+                                <input type="url" id="set-qris-url" placeholder="https://sewasepedasmr.my.id/qris.png" class="w-full text-xs p-2.5 rounded-xl bg-cloud border border-navy/15 focus:outline-none focus:ring-2 focus:ring-electric">
+                                <p class="text-[11px] text-slatecool mt-1">Akan tampil otomatis saat pelanggan memilih bayar via QRIS Online.</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-midnight mb-1">Jam Buka (0–23)</label>
+                                    <input type="number" id="set-open-hour" min="0" max="23" value="8" class="w-full text-xs p-2.5 rounded-xl bg-cloud border border-navy/15">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-midnight mb-1">Jam Tutup (0–23)</label>
+                                    <input type="number" id="set-close-hour" min="1" max="23" value="21" class="w-full text-xs p-2.5 rounded-xl bg-cloud border border-navy/15">
+                                </div>
+                            </div>
+                            <button onclick="saveSettings()" class="w-full py-3 rounded-xl bg-electric hover:bg-electric-dark text-white text-xs font-bold active:scale-95 transition">Simpan &amp; Sinkronkan ke Website</button>
+                        </div>
+
+                        <!-- Profil Usaha & Panduan Firebase -->
+                        <div class="bg-white rounded-2xl p-5 shadow-sm border border-navy/10 space-y-4">
+                            <div>
+                                <h3 class="font-display font-bold text-base text-midnight">Kontak &amp; Status Cloud Sync</h3>
+                                <p class="text-xs text-slatecool">Informasi kontak dan status koneksi database antar perangkat.</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-midnight mb-1">Nomor WhatsApp Admin (Format Tampilan)</label>
+                                <input type="text" id="set-wa-display" value="+62 812-3387-7752" class="w-full text-xs p-2.5 rounded-xl bg-cloud border border-navy/15">
+                            </div>
+                            <div class="p-3.5 rounded-2xl bg-navy text-white text-xs space-y-1.5">
+                                <p class="font-bold text-[#93C5FD]">💡 Tips Sinkronisasi Lintas HP &amp; Laptop</p>
+                                <p class="text-white/85 leading-relaxed">
+                                    Saat ini aplikasi sudah sinkron otomatis antar tab di perangkat ini. Untuk menghubungkan HP pelanggan dengan laptop owner secara online, masukkan kredensial proyek <strong>Firebase Firestore</strong> gratis pada objek <code class="bg-white/15 px-1 rounded">CONFIG.firebase</code> di kedua file HTML.
+                                </p>
+                            </div>
+                            <button onclick="saveSettings()" class="w-full py-3 rounded-xl bg-navy hover:bg-midnight text-white text-xs font-bold active:scale-95 transition">Perbarui Kontak</button>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+
+        <!-- ================= MOBILE BOTTOM NAVIGATION ================= -->
+        <nav class="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-navy/10 px-2 py-2 z-30">
+            <div class="grid grid-cols-3 gap-1">
+                <button onclick="switchSection('overview')" id="mob-overview" class="mob-btn flex flex-col items-center py-1 rounded-xl text-electric font-bold">
+                    <span class="mob-icon w-10 h-7 rounded-full bg-electric/15 flex items-center justify-center mb-0.5 text-sm">📋</span>
+                    <span class="text-[10px]">Reservasi</span>
+                </button>
+                <button onclick="switchSection('fleet')" id="mob-fleet" class="mob-btn flex flex-col items-center py-1 rounded-xl text-slatecool font-medium">
+                    <span class="mob-icon w-10 h-7 rounded-full flex items-center justify-center mb-0.5 text-sm">🚲</span>
+                    <span class="text-[10px]">Armada</span>
+                </button>
+                <button onclick="switchSection('settings')" id="mob-settings" class="mob-btn flex flex-col items-center py-1 rounded-xl text-slatecool font-medium">
+                    <span class="mob-icon w-10 h-7 rounded-full flex items-center justify-center mb-0.5 text-sm">⚙️</span>
+                    <span class="text-[10px]">Pengaturan</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- ================= MODAL INPUT SEWA WALK-IN ================= -->
+    <div id="modal-walkin" class="hidden fixed inset-0 z-50 bg-midnight/65 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-fade">
+            <div class="bg-navy text-white px-5 py-4 flex items-center justify-between">
+                <div>
+                    <h3 class="font-display font-bold text-base">Catat Sewa Walk-in / Manual</h3>
+                    <p class="text-[11px] text-[#93C5FD]">Otomatis mengunci jadwal unit di aplikasi pelanggan</p>
+                </div>
+                <button onclick="closeModal('modal-walkin')" class="w-8 h-8 rounded-full bg-white/10 text-white font-bold">✕</button>
+            </div>
+            <form id="walkin-form" onsubmit="submitWalkin(event)" class="p-5 space-y-3 text-xs">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slatecool mb-1">Nama Penyewa *</label>
+                        <input type="text" id="wi-name" required placeholder="Nama lengkap" class="w-full p-2.5 rounded-xl bg-cloud border border-navy/15">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slatecool mb-1">No. WhatsApp *</label>
+                        <input type="tel" id="wi-wa" required placeholder="0812..." class="w-full p-2.5 rounded-xl bg-cloud border border-navy/15">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slatecool mb-1">Tanggal</label>
+                        <input type="date" id="wi-date" required class="w-full p-2 rounded-xl bg-cloud border border-navy/15">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slatecool mb-1">Jam Mulai</label>
+                        <input type="time" id="wi-time" value="10:00" min="10:00" required class="w-full p-2 rounded-xl bg-cloud border border-navy/15">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slatecool mb-1">Durasi</label>
+                        <select id="wi-duration" class="w-full p-2 rounded-xl bg-cloud border border-navy/15">
+                            <option value="1">1 jam</option>
+                            <option value="2">2 jam</option>
+                            <option value="3" selected>3 jam</option>
+                            <option value="5">5 jam</option>
+                            <option value="12">Seharian</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slatecool mb-1">Pilih Unit Sepeda *</label>
+                    <select id="wi-bike" required class="w-full p-2.5 rounded-xl bg-cloud border border-navy/15"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slatecool mb-1">Status Awal</label>
+                        <select id="wi-status" class="w-full p-2.5 rounded-xl bg-cloud border border-navy/15">
+                            <option value="Sedang Dipinjam">Sedang Dipinjam</option>
+                            <option value="Dikonfirmasi">Dikonfirmasi</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slatecool mb-1">Total Tarif (Rp)</label>
+                        <input type="number" id="wi-total" value="35000" required class="w-full p-2.5 rounded-xl bg-cloud border border-navy/15">
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-3 mt-2 rounded-xl bg-electric hover:bg-electric-dark text-white font-bold active:scale-95 transition">
+                    Simpan &amp; Kunci Jadwal
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MODAL TAMBAH / EDIT SEPEDA ================= -->
+    <div id="modal-bike" class="hidden fixed inset-0 z-50 bg-midnight/65 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-fade">
+            <div class="bg-navy text-white px-5 py-4 flex items-center justify-between">
+                <h3 id="bike-modal-title" class="font-display font-bold text-base">Tambah Unit Sepeda</h3>
+                <button onclick="closeModal('modal-bike')" class="w-8 h-8 rounded-full bg-white/10 text-white font-bold">✕</button>
+            </div>
+            <form id="bike-form" onsubmit="submitBikeForm(event)" class="p-5 space-y-3 text-xs">
+                <input type="hidden" id="bf-id">
+                <div>
+                    <label class="block font-semibold text-slatecool mb-1">Nama Unit Sepeda *</label>
+                    <input type="text" id="bf-name" required placeholder="Contoh: Commuter Electric Blue" class="w-full p-2.5 rounded-xl bg-cloud border border-navy/15">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slatecool mb-1">Tinggi Min. (cm)</label>
+                        <input type="number" id="bf-min-height" value="150" required class="w-full p-2.5 rounded-xl bg-cloud border border-navy/15">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slatecool mb-1">Beban Maks. (kg)</label>
+                        <input type="number" id="bf-max-weight" value="100" required class="w-full p-2.5 rounded-xl bg-cloud border border-navy/15">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slatecool mb-1">Kategori Tarif</label>
+                        <select id="bf-tier" class="w-full p-2.5 rounded-xl bg-cloud border border-navy/15">
+                            <option value="standard">Standard (mulai Rp20rb)</option>
+                            <option value="mtb">MTB (mulai Rp23rb)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slatecool mb-1">Warna Rangka</label>
+                        <input type="color" id="bf-color" value="#0055FF" class="w-full h-10 p-1 rounded-xl bg-cloud border border-navy/15 cursor-pointer">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slatecool mb-1">Fitur (pisahkan koma)</label>
+                    <input type="text" id="bf-features" value="Jok empuk" class="w-full p-2.5 rounded-xl bg-cloud border border-navy/15">
+                </div>
+                <div class="flex items-center gap-4 pt-1">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="bf-addon-front" class="accent-electric w-4 h-4">
+                        <span>👶 Boncengan Depan</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="bf-addon-rear" class="accent-electric w-4 h-4">
+                        <span>👶 Boncengan Belakang</span>
+                    </label>
+                </div>
+                <button type="submit" class="w-full py-3 mt-2 rounded-xl bg-electric hover:bg-electric-dark text-white font-bold active:scale-95 transition">
+                    Simpan Unit Sepeda
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= MODAL KONFIRMASI HAPUS ================= -->
+    <div id="modal-confirm" class="hidden fixed inset-0 z-50 bg-midnight/65 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-xs rounded-3xl p-5 text-center shadow-2xl animate-fade">
+            <div class="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3 text-xl">🗑️</div>
+            <h3 class="font-display font-bold text-base text-midnight">Konfirmasi Hapus</h3>
+            <p id="confirm-text" class="text-xs text-slatecool mt-1 mb-5">Apakah Anda yakin ingin menghapus data ini?</p>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="closeModal('modal-confirm')" class="py-2.5 rounded-xl bg-cloud text-midnight text-xs font-bold">Batal</button>
+                <button id="confirm-yes-btn" class="py-2.5 rounded-xl bg-red-600 text-white text-xs font-bold">Ya, Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="hidden fixed top-5 right-5 z-50 bg-midnight text-white text-xs font-medium px-4 py-3 rounded-2xl shadow-xl border border-electric/60"></div>
+
+    <script>
+        /* ==========================================================================
+        1. KONFIGURASI SINKRONISASI (Harus sama dengan CONFIG di index.html)
+           ========================================================================== */
+        const CONFIG = {
+            ownerPin: '1234',
+            waNumber: '6281233877752',
+            waDisplay: '+62 812-3387-7752',
+            openHour: 8,
+            closeHour: 21,
+            qrisImage: '',
+            promoText: 'Promo: Gowes Jumat Malam, Rp45.000 sampai selesai! Gratis helm & gembok sepeda.',
+
+            // Isi kredensial Firebase Firestore yang sama dengan index.html untuk sinkronisasi cloud antar perangkat:
+            firebase: {
+                apiKey: '',
+                authDomain: '',
+                projectId: '',
+                storageBucket: '',
+                messagingSenderId: '',
+                appId: ''
+            },
+
+            storage: {
+                orders: 'sewasepedasmr_orders',
+                settings: 'sewasepedasmr_settings'
+            }
+        };
+
+        const DEFAULT_BIKES = [
+            { id: 'lovina', name: 'City Bike Lovina', tier: 'standard', frame: '#D6C79C', accent: '#8B6F47', basket: true,
+              minHeight: 150, maxWeight: 120, features: ['Jok empuk', 'Keranjang depan'], addons: [], photo: '', inMaintenance: false },
+            { id: 'commuter-1', name: 'Commuter Hitam 1', tier: 'standard', frame: '#060B11', accent: '#0055FF', basket: false,
+              minHeight: 155, maxWeight: 100, features: ['Jok empuk'], addons: ['front', 'rear'], photo: '', inMaintenance: false },
+            { id: 'commuter-2', name: 'Commuter Hitam 2', tier: 'standard', frame: '#374151', accent: '#9CA3AF', basket: false,
+              minHeight: 155, maxWeight: 100, features: ['Jok empuk'], addons: ['front'], photo: '', inMaintenance: false },
+            { id: 'commuter-magenta', name: 'Commuter Hitam Magenta', tier: 'standard', frame: '#BE185D', accent: '#060B11', basket: true,
+              minHeight: 150, maxWeight: 100, features: ['Jok empuk', 'Keranjang depan'], addons: ['front'], photo: '', inMaintenance: false },
+            { id: 'commuter-kuning', name: 'Commuter Kuning', tier: 'standard', frame: '#EAB308', accent: '#063177', basket: true,
+              minHeight: 150, maxWeight: 100, features: ['Keranjang depan'], addons: ['front', 'rear'], photo: '', inMaintenance: false },
+            { id: 'mtb-cascade', name: 'MTB Polygon Cascade', tier: 'mtb', frame: '#0055FF', accent: '#063177', basket: false,
+              minHeight: 160, maxWeight: 110, features: ['Suspensi depan'], addons: [], photo: '', inMaintenance: false }
+        ];
+
+        let fleet = [...DEFAULT_BIKES];
+        let bookings = [];
+        let activeFilter = 'Semua';
+        let db = null;
+        let knownOrderCodes = new Set();
+
+        const formatRp = (num) => 'Rp' + Number(num || 0).toLocaleString('id-ID');
+        const fmtMin = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+        const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
+        const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+        function readStore(key, fallback) {
+            try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
+        }
+        function writeStore(key, val) {
+            try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* ignore */ }
+        }
+
+        // Bunyi notifikasi lembut saat pesanan baru masuk (Web Audio API)
+        function playChime() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1174.66, ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+            } catch (e) { /* audio diblokir sebelum interaksi */ }
+        }
+
+        // Koneksi Firebase Firestore jika diisi
+        function initCloudSync() {
+            const fb = CONFIG.firebase;
+            if (fb && fb.apiKey && fb.projectId && window.firebase) {
+                try {
+                    if (!firebase.apps.length) firebase.initializeApp(fb);
+                    db = firebase.firestore();
+                    document.getElementById('sync-status-label').textContent = 'Cloud Real-Time Aktif';
+                    document.getElementById('mob-sync-label').textContent = 'Dashboard Pemilik • Cloud Live';
+
+                    db.collection('config').doc('store').onSnapshot((doc) => {
+                        if (doc.exists) {
+                            const cfg = doc.data();
+                            if (Array.isArray(cfg.bikes)) fleet = cfg.bikes;
+                            if (cfg.promoText) CONFIG.promoText = cfg.promoText;
+                            if (typeof cfg.openHour === 'number') CONFIG.openHour = cfg.openHour;
+                            if (typeof cfg.closeHour === 'number') CONFIG.closeHour = cfg.closeHour;
+                            if (typeof cfg.qrisImage === 'string') CONFIG.qrisImage = cfg.qrisImage;
+                            populateSettingsForm();
+                            refreshAll();
+                        }
+                    });
+
+                    db.collection('orders').onSnapshot((snap) => {
+                        const list = [];
+                        snap.forEach((doc) => list.push(doc.data()));
+                        list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+
+                        // Deteksi pesanan baru masuk
+                        list.forEach((o) => {
+                            if (knownOrderCodes.size > 0 && !knownOrderCodes.has(o.code)) {
+                                playChime();
+                                showToast(`🔔 Pesanan baru masuk: ${o.code} (${o.name})`);
+                            }
+                        });
+                        knownOrderCodes = new Set(list.map((o) => o.code));
+
+                        bookings = list;
+                        writeStore(CONFIG.storage.orders, bookings);
+                        refreshAll();
+                    });
+                } catch (err) {
+                    console.warn('Gagal inisialisasi Firebase:', err);
+                }
+            }
+        }
+
+        function syncOrdersToStorage(updatedOrder = null) {
+            writeStore(CONFIG.storage.orders, bookings);
+            if (db && updatedOrder) {
+                db.collection('orders').doc(updatedOrder.code).set(updatedOrder).catch((e) => console.warn(e));
+            }
+        }
+
+        function syncSettingsToStorage() {
+            const payload = {
+                promoText: CONFIG.promoText,
+                openHour: CONFIG.openHour,
+                closeHour: CONFIG.closeHour,
+                waNumber: CONFIG.waNumber,
+                waDisplay: CONFIG.waDisplay,
+                qrisImage: CONFIG.qrisImage,
+                bikes: fleet
+            };
+            writeStore(CONFIG.storage.settings, payload);
+            if (db) {
+                db.collection('config').doc('store').set(payload).catch((e) => console.warn(e));
+            }
+        }
+
+        // PIN Lock
+        function unlockDashboard(e) {
+            e.preventDefault();
+            const val = document.getElementById('pin-input').value.trim();
+            if (val === CONFIG.ownerPin) {
+                sessionStorage.setItem('sewasepedasmr_owner_unlocked', '1');
+                document.getElementById('lock-screen').classList.add('hidden');
+                document.getElementById('pin-error').classList.add('hidden');
+            } else {
+                document.getElementById('pin-error').classList.remove('hidden');
+            }
+        }
+
+        function lockDashboard() {
+            sessionStorage.removeItem('sewasepedasmr_owner_unlocked');
+            document.getElementById('pin-input').value = '';
+            document.getElementById('lock-screen').classList.remove('hidden');
+        }
+
+        // Helper Badge Status
+        function getStatusStyle(status) {
+            switch (status) {
+                case 'Menunggu pembayaran':
+                case 'Menunggu Konfirmasi':
+                case 'Menunggu konfirmasi admin': return 'bg-amber-100 text-amber-800';
+                case 'Bukti dikirim, menunggu konfirmasi': return 'bg-sky-100 text-sky-700';
+                case 'Dikonfirmasi': return 'bg-blue-100 text-blue-800';
+                case 'Sedang Dipinjam': return 'bg-violet-100 text-violet-700';
+                case 'Selesai': return 'bg-green-100 text-green-700';
+                case 'Waktu bayar habis':
+                case 'Dibatalkan': return 'bg-red-100 text-red-700';
+                default: return 'bg-gray-100 text-gray-600';
+            }
+        }
+
+        function bikeMiniSVG(color) {
+            return `
+                <svg class="w-16 h-12 shrink-0" viewBox="0 0 120 80" fill="none">
+                    <circle cx="28" cy="54" r="17" stroke="#1F2937" stroke-width="4"/>
+                    <circle cx="92" cy="54" r="17" stroke="#1F2937" stroke-width="4"/>
+                    <path d="M28 54 L54 54 L76 30 L44 30 Z" stroke="${color}" stroke-width="5" stroke-linejoin="round"/>
+                    <path d="M92 54 L74 22 L83 20" stroke="${color}" stroke-width="4.5" stroke-linecap="round"/>
+                    <path d="M54 54 L41 24" stroke="${color}" stroke-width="4.5" stroke-linecap="round"/>
+                    <path d="M34 23 H48" stroke="#111827" stroke-width="4.5" stroke-linecap="round"/>
+                </svg>
+            `;
+        }
+
+        function populateSettingsForm() {
+            document.getElementById('set-promo-text').value = CONFIG.promoText;
+            document.getElementById('set-qris-url').value = CONFIG.qrisImage;
+            document.getElementById('set-open-hour').value = CONFIG.openHour;
+            document.getElementById('set-close-hour').value = CONFIG.closeHour;
+            document.getElementById('set-wa-display').value = CONFIG.waDisplay;
+        }
+
+        function initDashboard() {
+            if (sessionStorage.getItem('sewasepedasmr_owner_unlocked') === '1') {
+                document.getElementById('lock-screen').classList.add('hidden');
+            }
+
+            const nowLabel = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            document.getElementById('current-date-label').textContent = nowLabel;
+            document.getElementById('wi-date').value = new Date().toISOString().split('T')[0];
+
+            const savedSettings = readStore(CONFIG.storage.settings, null);
+            if (savedSettings) {
+                if (Array.isArray(savedSettings.bikes)) fleet = savedSettings.bikes;
+                if (savedSettings.promoText) CONFIG.promoText = savedSettings.promoText;
+                if (typeof savedSettings.openHour === 'number') CONFIG.openHour = savedSettings.openHour;
+                if (typeof savedSettings.closeHour === 'number') CONFIG.closeHour = savedSettings.closeHour;
+                if (typeof savedSettings.qrisImage === 'string') CONFIG.qrisImage = savedSettings.qrisImage;
+                if (savedSettings.waDisplay) CONFIG.waDisplay = savedSettings.waDisplay;
+            }
+            populateSettingsForm();
+
+            bookings = readStore(CONFIG.storage.orders, []);
+            knownOrderCodes = new Set(bookings.map((o) => o.code));
+
+            refreshAll();
+            initCloudSync();
+        }
+
+        // Listener Real-Time Multi-Tab dari halaman pelanggan (index.html)
+        window.addEventListener('storage', (e) => {
+            if (e.key === CONFIG.storage.orders) {
+                const updated = readStore(CONFIG.storage.orders, []);
+                updated.forEach((o) => {
+                    if (!knownOrderCodes.has(o.code)) {
+                        playChime();
+                        showToast(`🔔 Pesanan baru masuk: ${o.code} (${o.name})`);
+                    }
+                });
+                knownOrderCodes = new Set(updated.map((o) => o.code));
+                bookings = updated;
+                refreshAll();
+            }
+        });
+
+        function refreshAll() {
+            renderKPIs();
+            renderBookings();
+            renderFleet();
+        }
+
+        function renderKPIs() {
+            const validRevenue = bookings
+                .filter(b => b.status !== 'Dibatalkan' && b.status !== 'Waktu bayar habis')
+                .reduce((sum, b) => sum + Number(b.total || 0), 0);
+
+            const pendingCount = bookings.filter(b =>
+                b.status === 'Menunggu konfirmasi admin' ||
+                b.status === 'Menunggu pembayaran' ||
+                b.status === 'Bukti dikirim, menunggu konfirmasi'
+            ).length;
+
+            const activeCount = bookings.filter(b => b.status === 'Sedang Dipinjam').length;
+            const availFleet = fleet.filter(f => !f.inMaintenance).length;
+            const maintFleet = fleet.filter(f => f.inMaintenance).length;
+
+            document.getElementById('kpi-revenue').textContent = formatRp(validRevenue);
+            document.getElementById('kpi-pending').textContent = pendingCount;
+            document.getElementById('kpi-active').textContent = activeCount;
+            document.getElementById('kpi-fleet').textContent = `${availFleet}/${fleet.length}`;
+            document.getElementById('kpi-fleet-sub').textContent = maintFleet > 0 ? `${maintFleet} unit perawatan` : 'Semua unit siap operasi';
+
+            const badge = document.getElementById('sidebar-pending-badge');
+            badge.textContent = pendingCount;
+            badge.classList.toggle('hidden', pendingCount === 0);
+        }
+
+        function setBookingFilter(status) {
+            activeFilter = status;
+            document.querySelectorAll('.filter-pill').forEach(btn => {
+                const mapLabel = {
+                    'Semua': 'Semua',
+                    'Menunggu': 'Menunggu Konfirmasi / Bayar',
+                    'Dikonfirmasi': 'Dikonfirmasi',
+                    'Sedang Dipinjam': 'Sedang Dipinjam',
+                    'Selesai': 'Selesai',
+                    'Dibatalkan': 'Dibatalkan / Expired'
+                };
+                const isMatch = btn.textContent.trim() === mapLabel[status];
+                btn.className = isMatch
+                    ? 'filter-pill px-3 py-1.5 rounded-full text-xs font-bold bg-electric text-white shrink-0'
+                    : 'filter-pill px-3 py-1.5 rounded-full text-xs font-semibold bg-cloud text-slatecool shrink-0';
+            });
+            renderBookings();
+        }
+
+        function renderBookings() {
+            const container = document.getElementById('bookings-container');
+            const query = (document.getElementById('booking-search').value || '').toLowerCase().trim();
+
+            const filtered = bookings.filter(b => {
+                let matchStatus = true;
+                if (activeFilter === 'Menunggu') {
+                    matchStatus = b.status.includes('Menunggu') || b.status.includes('Bukti');
+                } else if (activeFilter === 'Dibatalkan') {
+                    matchStatus = b.status === 'Dibatalkan' || b.status === 'Waktu bayar habis';
+                } else if (activeFilter !== 'Semua') {
+                    matchStatus = b.status === activeFilter;
+                }
+
+                const matchQuery = b.code.toLowerCase().includes(query) ||
+                                   b.name.toLowerCase().includes(query) ||
+                                   b.wa.toLowerCase().includes(query);
+                return matchStatus && matchQuery;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-10 text-center border border-navy/10">
+                        <p class="font-bold text-sm text-midnight">Tidak ada data reservasi</p>
+                        <p class="text-xs text-slatecool mt-1">Pesanan dari halaman pelanggan akan muncul otomatis di sini.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const statusOptions = [
+                'Menunggu pembayaran',
+                'Menunggu konfirmasi admin',
+                'Bukti dikirim, menunggu konfirmasi',
+                'Dikonfirmasi',
+                'Sedang Dipinjam',
+                'Selesai',
+                'Dibatalkan'
+            ];
+
+            container.innerHTML = filtered.map(b => {
+                const cleanWa = String(b.wa || '').replace(/[^0-9]/g, '').replace(/^0/, '62');
+                const unitDetails = (b.items || []).map(i => {
+                    const addonStr = i.addons && i.addons.length ? ` (+${i.addons.map(a => a === 'front' ? 'Depan' : 'Belakang').join(', ')})` : '';
+                    return `${i.name}${addonStr}`;
+                }).join(', ');
+                const timeText = typeof b.startMin === 'number' ? `${fmtMin(b.startMin)} – ${fmtMin(b.endMin)} WITA` : '';
+
+                return `
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-navy/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="font-display font-extrabold text-sm text-midnight">${esc(b.code)}</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${getStatusStyle(b.status)}">${esc(b.status)}</span>
+                                <span class="text-[11px] text-slatecool">• ${esc(b.payment || '')}</span>
+                            </div>
+                            <p class="text-xs font-bold text-midnight">${esc(b.name)} <span class="font-normal text-slatecool">(+${esc(cleanWa)})</span></p>
+                            <p class="text-xs text-midnight">🚲 ${esc(unitDetails)}</p>
+                            <p class="text-[11px] text-slatecool">📅 ${esc(b.date)} • ⏰ ${timeText} (${b.hours} jam)</p>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-navy/10">
+                            <span class="font-display font-extrabold text-sm text-midnight mr-auto md:mr-3">${formatRp(b.total)}</span>
+
+                            <select onchange="updateBookingStatus('${esc(b.code)}', this.value)" class="text-xs font-semibold px-2.5 py-2 rounded-xl bg-cloud border border-navy/15 text-midnight focus:outline-none">
+                                ${statusOptions.map(st =>
+                                    `<option value="${st}" ${b.status === st ? 'selected' : ''}>${st}</option>`
+                                ).join('')}
+                            </select>
+
+                            <a href="https://wa.me/${cleanWa}?text=${encodeURIComponent(`Halo Kak ${b.name}, pesanan sepeda ${b.code} di SewaSepedaSMR.my.id saat ini berstatus: ${b.status}.`)}" target="_blank" rel="noopener" class="px-3 py-2 rounded-xl bg-electric hover:bg-electric-dark text-white text-xs font-bold active:scale-95 transition">
+                                WA
+                            </a>
+
+                            <button onclick="askDeleteBooking('${esc(b.code)}')" title="Hapus pesanan" class="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateBookingStatus(code, newStatus) {
+            const idx = bookings.findIndex(b => b.code === code);
+            if (idx > -1) {
+                bookings[idx].status = newStatus;
+                syncOrdersToStorage(bookings[idx]);
+                refreshAll();
+                showToast(`Status ${code} diubah menjadi "${newStatus}"`);
+            }
+        }
+
+        function askDeleteBooking(code) {
+            document.getElementById('confirm-text').textContent = `Hapus data reservasi ${code}?`;
+            document.getElementById('confirm-yes-btn').onclick = () => {
+                bookings = bookings.filter(b => b.code !== code);
+                writeStore(CONFIG.storage.orders, bookings);
+                if (db) db.collection('orders').doc(code).delete().catch(() => {});
+                closeModal('modal-confirm');
+                refreshAll();
+                showToast(`Reservasi ${code} dihapus.`);
+            };
+            document.getElementById('modal-confirm').classList.remove('hidden');
+        }
+
+        // Armada Sepeda
+        function renderFleet() {
+            const grid = document.getElementById('fleet-grid');
+            grid.innerHTML = fleet.map(bike => {
+                const statusBadge = !bike.inMaintenance
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-amber-100 text-amber-800';
+
+                return `
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-navy/10 flex flex-col justify-between gap-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-20 h-16 rounded-xl bg-cloud flex items-center justify-center shrink-0">
+                                ${bikeMiniSVG(bike.frame)}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${statusBadge} mb-1">
+                                    ● ${bike.inMaintenance ? 'Maintenance / Servis' : 'Siap Disewakan'}
+                                </span>
+                                <h4 class="font-display font-bold text-sm text-midnight truncate">${esc(bike.name)}</h4>
+                                <p class="text-[11px] text-slatecool mt-0.5 leading-snug">Min TB ${bike.minHeight} cm · Max BB ${bike.maxWeight} kg</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cloud text-midnight uppercase">${esc(bike.tier)}</span>
+                            ${(bike.addons || []).map(a => `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${a === 'front' ? 'bg-electric/10 text-electric' : 'bg-navy/10 text-navy'}">👶 ${a === 'front' ? 'Depan' : 'Belakang'}</span>`).join('')}
+                        </div>
+
+                        <div class="pt-3 border-t border-navy/10 flex items-center justify-between gap-2">
+                            <select onchange="toggleFleetMaintenance('${esc(bike.id)}', this.value)" class="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-cloud text-midnight border border-navy/15">
+                                <option value="ready" ${!bike.inMaintenance ? 'selected' : ''}>Siap Disewakan</option>
+                                <option value="maint" ${bike.inMaintenance ? 'selected' : ''}>Mode Perawatan</option>
+                            </select>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="openBikeModal('${esc(bike.id)}')" class="px-3 py-1.5 rounded-lg bg-navy hover:bg-midnight text-white text-[11px] font-bold">Edit</button>
+                                <button onclick="askDeleteBike('${esc(bike.id)}')" class="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 text-[11px] font-bold">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleFleetMaintenance(id, val) {
+            const bike = fleet.find(b => b.id === id);
+            if (bike) {
+                bike.inMaintenance = (val === 'maint');
+                syncSettingsToStorage();
+                refreshAll();
+                showToast(`${bike.name} diperbarui & disinkronkan!`);
+            }
+        }
+
+        function openBikeModal(id = null) {
+            document.getElementById('bike-form').reset();
+            if (id) {
+                const bike = fleet.find(b => b.id === id);
+                document.getElementById('bike-modal-title').textContent = 'Edit Unit Sepeda';
+                document.getElementById('bf-id').value = bike.id;
+                document.getElementById('bf-name').value = bike.name;
+                document.getElementById('bf-min-height').value = bike.minHeight;
+                document.getElementById('bf-max-weight').value = bike.maxWeight;
+                document.getElementById('bf-tier').value = bike.tier;
+                document.getElementById('bf-color').value = bike.frame;
+                document.getElementById('bf-features').value = (bike.features || []).join(', ');
+                document.getElementById('bf-addon-front').checked = (bike.addons || []).includes('front');
+                document.getElementById('bf-addon-rear').checked = (bike.addons || []).includes('rear');
+            } else {
+                document.getElementById('bike-modal-title').textContent = 'Tambah Unit Sepeda';
+                document.getElementById('bf-id').value = '';
+            }
+            document.getElementById('modal-bike').classList.remove('hidden');
+        }
+
+        function submitBikeForm(e) {
+            e.preventDefault();
+            const id = document.getElementById('bf-id').value;
+            const addons = [];
+            if (document.getElementById('bf-addon-front').checked) addons.push('front');
+            if (document.getElementById('bf-addon-rear').checked) addons.push('rear');
+
+            const features = document.getElementById('bf-features').value
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean);
+
+            const bikeData = {
+                id: id || 'bike-' + Date.now(),
+                name: document.getElementById('bf-name').value.trim(),
+                tier: document.getElementById('bf-tier').value,
+                frame: document.getElementById('bf-color').value,
+                accent: '#063177',
+                basket: features.some(f => f.toLowerCase().includes('keranjang')),
+                minHeight: Number(document.getElementById('bf-min-height').value),
+                maxWeight: Number(document.getElementById('bf-max-weight').value),
+                features: features.length ? features : ['Jok empuk'],
+                addons,
+                photo: '',
+                inMaintenance: false
+            };
+
+            if (id) {
+                const idx = fleet.findIndex(b => b.id === id);
+                bikeData.inMaintenance = fleet[idx].inMaintenance;
+                bikeData.photo = fleet[idx].photo || '';
+                fleet[idx] = bikeData;
+            } else {
+                fleet.push(bikeData);
+            }
+
+            syncSettingsToStorage();
+            closeModal('modal-bike');
+            refreshAll();
+            showToast(`Armada "${bikeData.name}" disimpan & disinkronkan!`);
+        }
+
+        function askDeleteBike(id) {
+            const bike = fleet.find(b => b.id === id);
+            document.getElementById('confirm-text').textContent = `Hapus unit "${bike.name}" dari daftar armada?`;
+            document.getElementById('confirm-yes-btn').onclick = () => {
+                fleet = fleet.filter(b => b.id !== id);
+                syncSettingsToStorage();
+                closeModal('modal-confirm');
+                refreshAll();
+                showToast(`Unit "${bike.name}" telah dihapus.`);
+            };
+            document.getElementById('modal-confirm').classList.remove('hidden');
+        }
+
+        // Walk-in Booking
+        function openWalkinModal() {
+            const select = document.getElementById('wi-bike');
+            select.innerHTML = fleet.map(b => `<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('');
+            document.getElementById('wi-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('wi-time').value = '10:00';
+            document.getElementById('modal-walkin').classList.remove('hidden');
+        }
+
+        function submitWalkin(e) {
+            e.preventDefault();
+            const bikeId = document.getElementById('wi-bike').value;
+            const bike = fleet.find(b => b.id === bikeId);
+            const startMin = toMin(document.getElementById('wi-time').value);
+            const hours = Number(document.getElementById('wi-duration').value);
+            const total = Number(document.getElementById('wi-total').value);
+
+            const newOrder = {
+                code: 'SMR-' + Math.floor(1000 + Math.random() * 9000),
+                name: document.getElementById('wi-name').value.trim(),
+                wa: document.getElementById('wi-wa').value.trim(),
+                payment: 'Walk-in (Tunai / QRIS)',
+                payMethod: 'onsite',
+                date: document.getElementById('wi-date').value,
+                startMin,
+                endMin: startMin + hours * 60,
+                hours,
+                items: [{ bikeId: bike.id, name: bike.name, price: total, addons: [] }],
+                total,
+                status: document.getElementById('wi-status').value,
+                payDeadline: null,
+                createdAt: new Date().toISOString()
+            };
+
+            bookings.unshift(newOrder);
+            knownOrderCodes.add(newOrder.code);
+            syncOrdersToStorage(newOrder);
+            document.getElementById('walkin-form').reset();
+            document.getElementById('wi-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('wi-time').value = '10:00';
+            closeModal('modal-walkin');
+            refreshAll();
+            showToast(`Sewa walk-in ${newOrder.code} dicatat & jadwal terkunci!`);
+        }
+
+        function saveSettings() {
+            CONFIG.promoText = document.getElementById('set-promo-text').value.trim();
+            CONFIG.qrisImage = document.getElementById('set-qris-url').value.trim();
+            CONFIG.openHour = Number(document.getElementById('set-open-hour').value);
+            CONFIG.closeHour = Number(document.getElementById('set-close-hour').value);
+            CONFIG.waDisplay = document.getElementById('set-wa-display').value.trim();
+            syncSettingsToStorage();
+            showToast('Pengaturan berhasil disimpan & disinkronkan ke aplikasi pelanggan!');
+        }
+
+        const sectionMeta = {
+            overview: { title: 'Ringkasan & Manajemen Reservasi', sub: 'Konfirmasi pesanan masuk, bukti QRIS, dan catat sewa walk-in secara real-time.' },
+            fleet: { title: 'Armada Sepeda', sub: 'Kelola daftar unit sepeda, spesifikasi, dan status perawatan.' },
+            settings: { title: 'Promo, QRIS & Toko', sub: 'Atur banner pengumuman, gambar QRIS, dan jam operasional.' }
+        };
+
+        function switchSection(sec) {
+            if (sec === 'bookings') sec = 'overview';
+            ['overview', 'fleet', 'settings'].forEach(s => {
+                document.getElementById(`sec-${s}`).classList.add('hidden');
+                const sideBtn = document.getElementById(`side-${s}`);
+                sideBtn.classList.remove('bg-electric', 'text-white', 'font-bold', 'shadow-sm');
+                sideBtn.classList.add('text-white/75', 'font-medium');
+
+                const mobBtn = document.getElementById(`mob-${s}`);
+                mobBtn.classList.remove('text-electric', 'font-bold');
+                mobBtn.classList.add('text-slatecool', 'font-medium');
+                mobBtn.querySelector('.mob-icon').classList.remove('bg-electric/15');
+            });
+
+            document.getElementById(`sec-${sec}`).classList.remove('hidden');
+            document.getElementById('page-title').textContent = sectionMeta[sec].title;
+            document.getElementById('page-subtitle').textContent = sectionMeta[sec].sub;
+
+            const activeSide = document.getElementById(`side-${sec}`);
+            activeSide.classList.add('bg-electric', 'text-white', 'font-bold', 'shadow-sm');
+            activeSide.classList.remove('text-white/75', 'font-medium');
+
+            const activeMob = document.getElementById(`mob-${sec}`);
+            activeMob.classList.add('text-electric', 'font-bold');
+            activeMob.classList.remove('text-slatecool', 'font-medium');
+            activeMob.querySelector('.mob-icon').classList.add('bg-electric/15');
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        let toastTimeout;
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => el.classList.add('hidden'), 3200);
+        }
+
+        window.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
